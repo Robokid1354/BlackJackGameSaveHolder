@@ -65,7 +65,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 
 
-// GO HERE     http://localhost:8080/?requestDataSteamID=6345642654&requestDataName=Will
+// GO HERE     http://localhost:8080/?requestDataSteamID=6345642654
 
 
 func WriteToFile(filename string, data string) error {
