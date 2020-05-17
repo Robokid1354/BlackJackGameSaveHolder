@@ -41,7 +41,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
       log.Println("The Key Thing, lets output that real fast: " + string(requestDataSteamID))
 
-      file, err := ioutil.ReadFile(requestDataSteamID+".json")
+      file, err := ioutil.ReadFile("Saves\\"+requestDataSteamID+".json")
 
       if err != nil {
         log.Fatal(err)
@@ -57,7 +57,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       fmt.Fprintf(w, "Post from website! r.PostFrom = %v\n", r.PostForm)
       steamID := r.FormValue("steamID")
       json := r.FormValue("json")
-      WriteToFile(steamID+".json",json)
+      WriteToFile("Saves\\"+steamID+".json",json)
     default:
       fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
   }
