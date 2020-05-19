@@ -7,6 +7,7 @@ import (
 	"os"
 	"io/ioutil"
   "io"
+  "path/filepath"
 )
 
 type Data struct {
@@ -30,9 +31,35 @@ func handler(w http.ResponseWriter, r *http.Request) {
       queryDataSteamID, ok := r.URL.Query()["requestDataSteamID"]
 
       if !ok || len(queryDataSteamID[0]) < 1 /*|| len(queryDataName[0]) < 1*/{
-        log.Println("Url Param 'key' is missing")
-        http.ServeFile(w,r, "form.html")
-        return
+        queryDataSpecial, ok := r.URL.Query()["requestDataSpecial"]
+        if !ok || len(queryDataSpecial[0]) < 1 {
+          log.Println("Url Param 'key' is missing")
+          http.ServeFile(w,r, "form.html")
+          return
+        }
+        requestDataSpecial := queryDataSpecial[0]
+        if requestDataSpecial == "all" {
+          var out string
+          var files []string
+
+          root := "Saves"
+          err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+            files = append(files, info.Name())
+            return nil
+          })
+          if err != nil {
+            log.Fatal(err)
+          }
+
+          for _, file := range files {
+            if file != "File_To_Delete.md" && file !="Saves" {out = out + file}
+          }
+
+          fmt.Fprintln(w, out)
+          log.Println(out)
+
+          return
+        }
       }
 
       // Query()["key"] will return an array of items,
@@ -40,6 +67,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	    requestDataSteamID := queryDataSteamID[0]
 
       log.Println("The Key Thing, lets output that real fast: " + string(requestDataSteamID))
+
+      _, err := os.Stat("Saves\\"+requestDataSteamID+".json")
+
+      if err != nil {
+        fmt.Fprintln(w, "nil")
+        log.Println("Save not Found! :: " + string(requestDataSteamID))
+        return
+      }
 
       file, err := ioutil.ReadFile("Saves\\"+requestDataSteamID+".json")
 
