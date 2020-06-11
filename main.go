@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
   "io"
   "path/filepath"
+  "time"
+  "strings"
 )
 
 type Data struct {
@@ -16,6 +18,8 @@ type Data struct {
 }
 
 func main() {
+    makeBackup()
+    purge()
     http.HandleFunc("/", handler)
     http.ListenAndServe(":8080", nil)
 }
@@ -52,7 +56,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
           }
 
           for _, file := range files {
-            if file != "File_To_Delete.md" && file !="Saves" {out = out + file}
+            if file != "File_To_Delete.md" && file !="Saves" {out = out + strings.ReplaceAll(file, "donate", "")}
           }
 
           fmt.Fprintln(w, out)
@@ -71,7 +75,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       _, err := os.Stat("Saves\\"+requestDataSteamID+".json")
 
       if err != nil {
-        fmt.Fprintln(w, "nil")
+        fmt.Fprintln(w, "nothing")
         log.Println("Save not Found! :: " + string(requestDataSteamID))
         return
       }
@@ -92,7 +96,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       fmt.Fprintf(w, "Post from website! r.PostFrom = %v\n", r.PostForm)
       steamID := r.FormValue("steamID")
       json := r.FormValue("json")
-      WriteToFile("Saves\\"+steamID+".json",json)
+      WriteToFile("Saves/"+steamID+".json",json)
     default:
       fmt.Fprintf(w, "Sorry, only GET and POST methods are supported.")
   }
@@ -115,4 +119,90 @@ func WriteToFile(filename string, data string) error {
 		return err
 	}
 	return file.Sync()
+}
+
+
+func makeBackup() error {
+  var files []string
+  var names []string
+  root := "Saves"
+
+
+  dt := time.Now()
+  newTime := strings.Split(dt.String(), ".")
+  dir := "Backups/Saves("+newTime[0]+")"
+  dir = strings.ReplaceAll(dir, ":", "_")
+  dir = strings.ReplaceAll(dir, "-", "_")
+  log.Println(dir)
+  err := os.MkdirAll(dir, 0755)
+
+  if err != nil {
+    log.Fatal(err)
   }
+
+  err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+    if info.Name() != "Saves" && info.Name() != "File_To_Delete.md" {
+      files = append(files, path)
+      names = append(names, info.Name())
+    }
+    return nil
+  })
+
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  for i, file := range files {
+    num, err := copy( file, dir+"/"+names[i])
+    if err != nil {
+      log.Println(num)
+      log.Fatal(err)
+    }
+  }
+
+  time.AfterFunc(time.Minute*15,func(){makeBackup()})
+  return nil
+}
+func copy(src, dst string) (int64, error) {
+        sourceFileStat, err := os.Stat(src)
+        if err != nil {
+                return 0, err
+        }
+
+        if !sourceFileStat.Mode().IsRegular() {
+                return 0, fmt.Errorf("%s is not a regular file", src)
+        }
+
+        source, err := os.Open(src)
+        if err != nil {
+                return 0, err
+        }
+        defer source.Close()
+
+        destination, err := os.Create(dst)
+        if err != nil {
+                return 0, err
+        }
+        defer destination.Close()
+        nBytes, err := io.Copy(destination, source)
+        return nBytes, err
+}
+
+func purge() {
+
+  root := "Saves"
+  beforeT := time.Now().AddDate(0,0,-30)
+  err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+    if info.Name() != "Saves" && info.Name() != "File_To_Delete.md" && !strings.Contains(info.Name(), "donate") {
+      check := info.ModTime().Before(beforeT)
+      if check {
+        os.Remove(path)
+      }
+    }
+    return nil
+  })
+  if err != nil {
+    log.Fatal(err)
+  }
+
+}
