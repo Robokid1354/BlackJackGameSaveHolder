@@ -21,7 +21,7 @@ func main() {
     makeBackup()
     purge()
     http.HandleFunc("/", handler)
-    http.ListenAndServe(":8080", nil)
+    http.ListenAndServe(":9797", nil)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +59,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
             if file != "File_To_Delete.md" && file !="Saves" {out = out + strings.ReplaceAll(file, "donate", "")}
           }
 
+          out = "Good"
           fmt.Fprintln(w, out)
           log.Println(out)
 
@@ -75,7 +76,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
       _, err := os.Stat("Saves\\"+requestDataSteamID+".json")
 
       if err != nil {
-        fmt.Fprintln(w, "nothing")
+        fmt.Fprintln(w, "no save")
         log.Println("Save not Found! :: " + string(requestDataSteamID))
         return
       }
@@ -160,7 +161,7 @@ func makeBackup() error {
     }
   }
 
-  time.AfterFunc(time.Minute*15,func(){makeBackup()})
+  //time.AfterFunc(time.Minute*15,func(){makeBackup()})
   return nil
 }
 func copy(src, dst string) (int64, error) {
